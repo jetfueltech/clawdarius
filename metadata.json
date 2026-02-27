@@ -1,0 +1,5 @@
+{
+  "name": "Voxel Office Sim",
+  "description": "A 3D voxel-style simulation of an office worker processing papers with automated pathfinding and task execution.",
+  "requestFramePermissions": []
+}
