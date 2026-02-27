@@ -49,6 +49,7 @@ export interface Order {
   priority: PriorityLevel;
   timestamp: number;
   fileData?: string;
+  mimeType?: string;
   transcript?: string;
 }
 

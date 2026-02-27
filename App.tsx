@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, Suspense, useMemo } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Vector3, MathUtils } from 'three';
@@ -43,24 +42,23 @@ const generateRandomOrder = (prio: PriorityLevel = 'STANDARD'): Order => {
 
 const transcribeAudio = async (base64Data: string, mimeType: string): Promise<string> => {
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: {
-                parts: [
-                    {
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
-                        }
-                    },
-                    {
-                        text: "Please transcribe this audio. Provide only the transcription, without any markdown formatting or extra text."
-                    }
-                ]
-            }
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-audio`;
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fileData: base64Data, mimeType }),
         });
-        return response.text || "Transcription failed.";
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.transcript || "Transcription failed.";
     } catch (error) {
         console.error("Transcription error:", error);
         return "Transcription failed due to an error.";
