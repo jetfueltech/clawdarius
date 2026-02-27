@@ -41,24 +41,46 @@ Deno.serve(async (req: Request) => {
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: fileData,
-            },
-          },
-          {
-            text: "Please transcribe this audio. Provide only the transcription, without any markdown formatting or extra text.",
-          },
-        ],
-      },
-    });
 
-    const transcript = response.text || "Transcription failed.";
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: fileData,
+              },
+            },
+            {
+              text: "Please transcribe this audio. Provide only the transcription, without any markdown formatting or extra text.",
+            },
+          ],
+        },
+      });
+    } catch (apiError) {
+      const apiMessage = apiError instanceof Error ? apiError.message : String(apiError);
+      return new Response(
+        JSON.stringify({ error: `Gemini API error: ${apiMessage}` }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const transcript = response?.text;
+    if (!transcript) {
+      return new Response(
+        JSON.stringify({ error: "Gemini returned empty transcription" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     return new Response(JSON.stringify({ transcript }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -60,8 +60,9 @@ const transcribeAudio = async (base64Data: string, mimeType: string): Promise<st
         const data = await response.json();
         return data.transcript || "Transcription failed.";
     } catch (error) {
-        console.error("Transcription error:", error);
-        return "Transcription failed due to an error.";
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        console.error("Transcription error:", msg);
+        return `Transcription failed: ${msg}`;
     }
 };
 
